@@ -240,10 +240,12 @@ class LinearWithGradAccumulationAndAsyncCommunication(torch.autograd.Function):
         else:
             total_input = input
 
-        output = torch.matmul(total_input, weight.t())
-        if bias is not None:
-            output = output + bias
-        return output
+        if bias is None:
+            bias = torch.zeros(weight.size(0), dtype=weight.dtype,
+                               device=weight.device, requires_grad=False)
+        
+        s, b, h = total_input.size() 
+        return torch.addmm(bias, total_input.view(-1, total_input.size(-1)), weight.t()).view(s, b, -1)  
 
     @staticmethod
     @custom_bwd
